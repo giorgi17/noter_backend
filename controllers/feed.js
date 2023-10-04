@@ -7,6 +7,7 @@ const logger = require('../utils/logger');
 const Note = require('../models/note');
 const User = require('../models/user');
 const NoteHistory = require('../models/noteHistory');
+const cache = require('../config/cache');
 
 exports.createNote = async (req, res, next) => {
   const errors = validationResult(req);
@@ -40,6 +41,7 @@ exports.createNote = async (req, res, next) => {
       action: 'create',
       note: { ...note._doc, creator: { _id: req.userId, name: user.name } },
     });
+    cache.getCache().del('notes');
     logger.info(`Note created - ${note._id}`);
     res.status(201).json({
       message: 'Note created successfully!',
@@ -75,10 +77,17 @@ exports.getNotes = async (req, res, next) => {
 
   try {
     const totalItems = await Note.find().countDocuments();
-    const notes = await Note.find()
+    let notes = await Note.find()
       .populate('creator')
+      .sort({ createdAt: -1 })
       .skip((currentPage - 1) * perPage)
       .limit(perPage);
+
+    if (cache.getCache().has('notes')) {
+      notes = cache.getCache().get('notes');
+    } else {
+      cache.getCache().set('notes', notes, 3000);
+    }
 
     logger.info(`Fetched notes - totalItems: ${totalItems}`);
     res
@@ -200,6 +209,8 @@ exports.updateNote = async (req, res, next) => {
 
     const savedNote = await note.save();
     io.getIO().emit('notes', { action: 'update', note: savedNote });
+    cache.getCache().del('notes');
+
     logger.info(`Note updated - ${note._id}`);
     res.status(200).json({ message: 'Note updated!', note });
     return { note, noteHistory };
@@ -249,6 +260,7 @@ exports.deleteNote = async (req, res, next) => {
     await user.save();
 
     io.getIO().emit('notes', { action: 'delete', note: noteId });
+    cache.getCache().del('notes');
     logger.info(`Deleted note - ${noteId}`);
     res.status(200).json({ message: 'Deleted note.' });
     return user;
@@ -287,6 +299,7 @@ exports.searchNotes = async (req, res, next) => {
       $text: { $search: searchText },
     })
       .populate('creator')
+      .sort({ createdAt: -1 })
       .skip((currentPage - 1) * perPage)
       .limit(perPage);
 

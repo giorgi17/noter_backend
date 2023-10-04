@@ -10,11 +10,13 @@ const feedController = require('../../controllers/feed');
 const feedValidation = require('../../validations/feed');
 const io = require('../../config/socket');
 const TEST_DB_URL = process.env.TEST_DB_URL;
+const cache = require('../../config/cache');
 
 describe('Feed controller', () => {
   before(async () => {
     const server = await mongoose.connect(TEST_DB_URL);
     io.init(server);
+    cache.init();
     const user = new User({
       _id: '5c0f66b979af55031b34728a',
       email: 'test@test.com',

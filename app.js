@@ -8,8 +8,8 @@ const swaggerUI = require('swagger-ui-express');
 require('dotenv').config({ path: './config.env' });
 const multerConfig = require('./config/multerConfig');
 const multer = require('multer');
-
 const logger = require('./utils/logger');
+const cache = require('./config/cache');
 
 const app = express();
 
@@ -75,10 +75,14 @@ mongoose
     logger.info('Connected to the database!');
     const server = app.listen(PORT);
 
+    // Initializing sockets
     const io = require('./config/socket').init(server);
     io.on('connection', stream => {
       console.log('Socket.io - Client connected!');
       logger.info('Socket.io - Client connected!');
     });
+
+    // Initializing cache
+    cache.init();
   })
   .catch(err => logger.error(err));
