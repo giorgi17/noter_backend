@@ -1,0 +1,516 @@
+# swagger.yaml
+
+openapi: 3.1.0
+info:
+  title: Noter API
+  version: 1.0.0
+  description: Noter app API
+servers:
+  - url: http://localhost:4000
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    UnauthorizedError:
+      description: Access token is missing or invalid
+
+  schemas:
+    User:
+      type: object
+      properties:
+        email:
+          type: string
+          description: Email of the user.
+        password:
+          type: string
+          description: Password of the user.
+        name:
+          type: string
+          description: Name of the user.
+        bio:
+          type: string
+          description: Biography of the user.
+          default: 'I am new!'
+        notes:
+          type: array
+          items:
+            type: string
+            format: uuid
+            description: Array of note IDs associated with the user.
+      required:
+        - email
+        - password
+        - name
+
+    Note:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Title of the note.
+        content:
+          type: string
+          description: Content of the note.
+        creator:
+          type: string
+          format: uuid
+          description: ID of the creator (user) of the note.
+        noteHistory:
+          type: string
+          format: uuid
+          description: ID of the note history associated with this note.
+      required:
+        - title
+        - content
+        - creator
+
+    SignupRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email of the user.
+          example: example@example.com
+        password:
+          type: string
+          description: Password of the user.
+          example: password123
+        name:
+          type: string
+          description: Name of the user.
+          example: John Doe
+
+    SignupResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A message indicating the result of the registration process.
+          example: User created!
+        userId:
+          type: string
+          format: uuid
+          description: The ID of the newly created user.
+          example: 5fbb4f03842b2d12c4097db2
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email of the user.
+          example: example@example.com
+        password:
+          type: string
+          description: Password of the user.
+          example: password123
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT token for authentication.
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImV4YW1wbGVAZXhhbXBsZS5jb20iLCJ1c2VySWQiOiI1ZmIwZjdiZmE5ODA3YzMzNjJkODU1N2IiLCJpYXQiOjE2NDA0Nzg3MDYsImV4cCI6MTY0MDQ4MTUwNn0.14YrT6YDZUqTebOe9g9u_CJmCPrh2NjeMxv_Ru4DFzA
+        userId:
+          type: string
+          format: uuid
+          description: The ID of the logged-in user.
+          example: 5fb0f7bfa9807c3362d8557b
+
+    CreateNoteRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Title of the note.
+        content:
+          type: string
+          description: Content of the note.
+        image:
+          type: string
+          format: binary
+      required:
+        - title
+        - content
+
+    CreateNoteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A message indicating the result of the operation.
+        note:
+          $ref: '#/components/schemas/Note'
+        creator:
+          type: object
+          properties:
+            _id:
+              type: string
+              format: uuid
+              description: ID of the creator (user) of the note.
+            name:
+              type: string
+              description: Name of the creator (user) of the note.
+
+    GetNotesResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A message indicating the result of the notes retrieval.
+          example: Fetched notes successfully.
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+          description: Array of notes.
+        totalItems:
+          type: integer
+          description: Total number of notes available.
+          example: 10
+      required:
+        - message
+        - notes
+        - totalItems
+
+    GetNoteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A message indicating the result of the request.
+          example: Note fetched successfully
+        note:
+          type: object
+          properties:
+            _id:
+              type: string
+              description: The unique identifier for the note.
+            title:
+              type: string
+              description: The title of the note.
+            content:
+              type: string
+              description: The content of the note.
+            userId:
+              type: string
+              format: uuid
+              description: The ID of the user who created the note.
+          description: The retrieved note.
+
+    UpdateNoteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A message indicating the result of the request.
+          example: Note updated successfully
+        note:
+          type: object
+          properties:
+            _id:
+              type: string
+              description: The unique identifier for the note.
+            title:
+              type: string
+              description: The title of the note.
+            content:
+              type: string
+              description: The content of the note.
+            userId:
+              type: string
+              format: uuid
+              description: The ID of the user who created the note.
+          description: The updated note.
+
+    UpdateNoteRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: The updated title of the note.
+          example: Updated Title
+        content:
+          type: string
+          description: The updated content of the note.
+          example: Updated content
+        image:
+          type: string
+          format: binary
+      required:
+        - title
+        - content
+
+    SearchNotesResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A message indicating the result of the search
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+        totalItems:
+          type: integer
+          description: Total number of items matching the search
+
+paths:
+  /user/signup:
+    post:
+      summary: Create a new user
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupResponse'
+        '422':
+          description: Validation failed
+        '500':
+          description: Internal server error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+
+  /user/login:
+    post:
+      summary: User login
+      responses:
+        '200':
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Authentication failed
+        '422':
+          description: Validation failed
+        '500':
+          description: Internal server error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+
+  /feed/note:
+    post:
+      summary: Create a new note
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateNoteRequest'
+      responses:
+        '201':
+          description: Note created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateNoteResponse'
+        '401':
+          description: Unauthorized
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A message indicating the validation failure.
+                    example: Validation failed.
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        param:
+                          type: string
+                          description: The parameter (field) that caused the validation error.
+                        msg:
+                          type: string
+                          description: The error message for the validation failure.
+                  example:
+                    - param: title
+                      msg: 'Title is required.'
+                    - param: content
+                      msg: 'Content is required.'
+        '500':
+          description: Internal server error
+
+  /feed/notes:
+    get:
+      summary: Get paginated notes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: 'Page number for pagination (default: 1)'
+          schema:
+            type: integer
+          required: true
+        - name: perPage
+          in: query
+          description: 'Number of items per page (default: 5)'
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: Fetched notes successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetNotesResponse'
+        '401':
+          description: Authentication failed
+        '422':
+          description: Validation failed
+        '500':
+          description: Internal server error
+
+  /feed/note/{noteId}:
+    get:
+      summary: Get a single note by ID
+      parameters:
+        - name: noteId
+          in: path
+          description: 'ID of the note to retrieve'
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Note fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetNoteResponse'
+        '401':
+          description: Authentication failed
+        '404':
+          description: Note not found
+        '422':
+          description: Validation failed
+        '500':
+          description: Internal server error
+
+    patch:
+      summary: Update a note
+      parameters:
+        - name: noteId
+          in: path
+          description: 'The ID of the note to update.'
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateNoteRequest'
+      responses:
+        '201':
+          description: Note created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateNoteResponse'
+        '401':
+          description: Authentication failed
+        '403':
+          description: Not authorized to update this note
+        '404':
+          description: Note not found
+        '422':
+          description: Validation failed
+        '500':
+          description: Internal server error
+    delete:
+      summary: Delete a note
+      parameters:
+        - in: path
+          name: noteId
+          required: true
+          description: ID of the note to be deleted
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Note deleted successfully
+        '401':
+          description: Authentication failed
+        '403':
+          description: Not authorized to update this note
+        '404':
+          description: Note not found
+        '422':
+          description: Validation failed
+        '500':
+          description: Internal server error
+
+  /feed/search:
+    get:
+      summary: Search for notes
+      parameters:
+        - in: query
+          name: searchText
+          schema:
+            type: string
+          description: Text to search for in notes
+          required: true
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: 'Page number for pagination (default: 1)'
+          required: true
+        - in: query
+          name: perPage
+          schema:
+            type: integer
+          description: 'Number of items per page (default: 5)'
+          required: true
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Fetched notes successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchNotesResponse'
+        '401':
+          description: Authentication failed
+        '422':
+          description: Validation failed
+        '500':
+          description: Internal server error
