@@ -1,8 +1,9 @@
 const path = require('path');
 const fs = require('fs');
 const { validationResult } = require('express-validator');
-const logger = require('../utils/logger');
 
+const io = require('../config/socket');
+const logger = require('../utils/logger');
 const Note = require('../models/note');
 const User = require('../models/user');
 const NoteHistory = require('../models/noteHistory');
@@ -35,6 +36,10 @@ exports.createNote = async (req, res, next) => {
     user.notes.push(note);
     const savedUser = await user.save();
 
+    io.getIO().emit('notes', {
+      action: 'create',
+      note: { ...note._doc, creator: { _id: req.userId, name: user.name } },
+    });
     logger.info(`Note created - ${note._id}`);
     res.status(201).json({
       message: 'Note created successfully!',
@@ -193,7 +198,8 @@ exports.updateNote = async (req, res, next) => {
       note.imageUrl = newImageUrl;
     }
 
-    await note.save();
+    const savedNote = await note.save();
+    io.getIO().emit('notes', { action: 'update', note: savedNote });
     logger.info(`Note updated - ${note._id}`);
     res.status(200).json({ message: 'Note updated!', note });
     return { note, noteHistory };
@@ -242,6 +248,7 @@ exports.deleteNote = async (req, res, next) => {
     user.notes.pull(noteId);
     await user.save();
 
+    io.getIO().emit('notes', { action: 'delete', note: noteId });
     logger.info(`Deleted note - ${noteId}`);
     res.status(200).json({ message: 'Deleted note.' });
     return user;

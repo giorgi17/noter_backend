@@ -73,6 +73,12 @@ mongoose
   .then(result => {
     console.log('Connected to the database!');
     logger.info('Connected to the database!');
-    app.listen(PORT);
+    const server = app.listen(PORT);
+
+    const io = require('./config/socket').init(server);
+    io.on('connection', stream => {
+      console.log('Socket.io - Client connected!');
+      logger.info('Socket.io - Client connected!');
+    });
   })
   .catch(err => logger.error(err));

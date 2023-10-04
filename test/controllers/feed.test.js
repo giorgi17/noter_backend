@@ -8,11 +8,13 @@ const Note = require('../../models/note');
 const NoteHistory = require('../../models/noteHistory');
 const feedController = require('../../controllers/feed');
 const feedValidation = require('../../validations/feed');
+const io = require('../../config/socket');
 const TEST_DB_URL = process.env.TEST_DB_URL;
 
 describe('Feed controller', () => {
   before(async () => {
-    await mongoose.connect(TEST_DB_URL);
+    const server = await mongoose.connect(TEST_DB_URL);
+    io.init(server);
     const user = new User({
       _id: '5c0f66b979af55031b34728a',
       email: 'test@test.com',
