@@ -75,11 +75,13 @@ exports.getNotes = async (req, res, next) => {
         return error;
     }
 
-    const currentPage = req.query.page || 1;
-    const perPage = req.query.perPage || 5;
+    const currentPage = parseInt(req.query.page) || 1;
+    const perPage = parseInt(req.query.perPage) || 5;
 
     try {
         const totalItems = await Note.find().countDocuments();
+        const hasNext = totalItems - currentPage * perPage > 0;
+
         let notes = await Note.find()
             .populate('creator')
             .sort({ createdAt: -1 })
@@ -98,6 +100,8 @@ exports.getNotes = async (req, res, next) => {
             message: 'Fetched notes successfully.',
             notes,
             totalItems,
+            currentPage,
+            hasNext,
         });
     } catch (err) {
         if (!err.statusCode) {
@@ -293,8 +297,8 @@ exports.searchNotes = async (req, res, next) => {
     }
 
     const searchText = req.query.searchText || '';
-    const currentPage = req.query.page || 1;
-    const perPage = req.query.perPage || 5;
+    const currentPage = parseInt(req.query.page) || 1;
+    const perPage = parseInt(req.query.perPage) || 5;
 
     const searchTextRegExp = new RegExp(searchText, 'i');
 
@@ -305,6 +309,7 @@ exports.searchNotes = async (req, res, next) => {
                 { content: { $regex: searchTextRegExp } },
             ],
         }).countDocuments();
+        const hasNext = totalItems - currentPage * perPage > 0;
 
         const notes = await Note.find({
             $or: [
@@ -322,6 +327,8 @@ exports.searchNotes = async (req, res, next) => {
             message: 'Fetched notes successfully.',
             notes,
             totalItems,
+            currentPage,
+            hasNext,
         });
     } catch (error) {
         if (!error.statusCode) {
