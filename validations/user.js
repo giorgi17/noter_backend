@@ -13,7 +13,10 @@ exports.signup = [
             }
         })
         .normalizeEmail(),
-    body('name').trim().not().isEmpty(),
+    body('name')
+        .trim()
+        .isLength({ min: 5 })
+        .withMessage('Name should be at least 5 characters.'),
     body(
         'password',
         'Please enter a password with only numbers and text and at least 5 characters.'
